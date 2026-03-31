@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اللاعب الأول - التحدي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Tajawal',sans-serif;background:#0a0e17;color:#f0e6d3;min-height:100vh;overflow:hidden;position:relative}
+        canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+        .content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;gap:20px}
+        .top-bar{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(10,14,23,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06);z-index:10}
+        .player-tag{font-size:1rem;font-weight:700;color:#ff6b35;display:flex;align-items:center;gap:8px}
+        .player-tag .mini-dot{width:10px;height:10px;border-radius:50%;background:#00e676;box-shadow:0 0 8px rgba(0,230,118,.5);animation:dotGlow 1.2s infinite}
+        @keyframes dotGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+        .q-counter{font-size:1rem;color:#888;font-weight:400}
+        .score-display{font-size:1.1rem;font-weight:700;color:#ffd700;display:flex;align-items:center;gap:6px}
+        .score-display span{font-size:1.4rem}
+        .question-card{background:linear-gradient(145deg,rgba(26,26,46,.9),rgba(10,14,23,.95));border:1px solid rgba(255,107,53,.2);border-radius:24px;padding:clamp(30px,6vw,60px) clamp(40px,8vw,80px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);min-width:min(90vw,500px);position:relative;overflow:hidden}
+        .question-card::before{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;border-radius:25px;background:linear-gradient(135deg,#ff6b35,#ffd700,#ff6b35);z-index:-1;opacity:.3;animation:borderSpin 4s linear infinite}
+        @keyframes borderSpin{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+        .q-text{font-size:clamp(2.5rem,8vw,4.5rem);font-weight:900;margin:20px 0;letter-spacing:4px;color:#fff;text-shadow:0 0 30px rgba(255,107,53,.3)}
+        .q-text .op{color:#ff6b35;margin:0 8px}
+        .q-text .eq{color:#ffd700;margin-right:12px}
+        .answer-row{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:24px;flex-wrap:wrap}
+        .answer-input{width:180px;padding:14px 20px;font-size:1.4rem;font-weight:700;font-family:'Tajawal',sans-serif;text-align:center;border:2px solid rgba(255,107,53,.3);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;outline:none;transition:all .3s}
+        .answer-input:focus{border-color:#ff6b35;box-shadow:0 0 20px rgba(255,107,53,.2)}
+        .submit-btn{padding:14px 36px;font-size:1.2rem;font-weight:900;font-family:'Tajawal',sans-serif;border:none;border-radius:14px;background:linear-gradient(135deg,#ff6b35,#e85d26);color:#fff;cursor:pointer;transition:all .3s}
+        .submit-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,53,.4)}
+        .submit-btn:active{transform:scale(.96)}
+        .submit-btn:disabled{background:#333;cursor:not-allowed;color:#666;box-shadow:none;transform:none}
+        .timer-ring{position:relative;width:100px;height:100px;margin:0 auto}
+        .timer-ring svg{transform:rotate(-90deg);width:100px;height:100px}
+        .timer-ring circle{fill:none;stroke-width:6}
+        .timer-ring .bg-ring{stroke:rgba(255,255,255,.08)}
+        .timer-ring .fg-ring{stroke:#ff6b35;stroke-linecap:round;transition:stroke-dashoffset .15s linear,stroke .3s}
+        .timer-ring .fg-ring.danger{stroke:#ff4444}
+        .timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.8rem;font-weight:900;color:#fff}
+        .feedback{font-size:1.2rem;font-weight:700;min-height:30px;margin-top:10px;transition:all .3s}
+        .feedback.correct{color:#00e676}
+        .feedback.wrong{color:#ff4444}
+        .feedback.timeout{color:#ff9800}
+        /* نتيجة */
+        .result-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(10,14,23,.95);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px}
+        .result-overlay.show{display:flex;animation:fadeIn .5s ease}
+        @keyframes fadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+        .result-title{font-size:clamp(2rem,5vw,3rem);font-weight:900;text-align:center}
+        .result-title.win{color:#ffd700}
+        .result-title.lose{color:#ff4444}
+        .result-title.draw{color:#29b6f6}
+        .scores-box{display:flex;gap:40px;margin:20px 0}
+        .score-card{text-align:center;padding:24px 32px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);min-width:140px}
+        .score-card .sc-label{font-size:.9rem;color:#888;margin-bottom:8px}
+        .score-card .sc-val{font-size:2.5rem;font-weight:900}
+        .score-card .sc-val.p1{color:#ff6b35}
+        .score-card .sc-val.p2{color:#00c9a7}
+        .end-btn{padding:16px 50px;font-size:1.2rem;font-weight:900;font-family:'Tajawal',sans-serif;border:none;border-radius:50px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#0a0e17;cursor:pointer;transition:all .3s;margin-top:10px}
+        .end-btn:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(255,107,53,.4)}
+        .glow-orb{position:fixed;border-radius:50%;filter:blur(100px);opacity:.1;pointer-events:none;z-index:0}
+        .orb1{width:300px;height:300px;background:#ff6b35;top:-60px;right:-60px}
+    </style>
+</head>
+<body>
+    <canvas id="bg"></canvas>
+    <div class="glow-orb orb1"></div>
+
+    <div class="top-bar">
+        <div class="player-tag"><div class="mini-dot"></div> اللاعب الأول</div>
+        <div class="q-counter" id="qCounter">السؤال 1 من 10</div>
+        <div class="score-display">النقاط: <span id="myScore">0</span></div>
+    </div>
+
+    <div class="content" id="gameArea">
+        <div class="timer-ring">
+            <svg viewBox="0 0 100 100">
+                <circle class="bg-ring" cx="50" cy="50" r="44"/>
+                <circle class="fg-ring" id="timerCircle" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-num" id="timerNum">10</div>
+        </div>
+
+        <div class="question-card">
+            <div class="q-text" id="qText"></div>
+            <div class="answer-row">
+                <input type="number" class="answer-input" id="ansInput" placeholder="الجواب" autocomplete="off">
+                <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">إجابة</button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-title" id="resultTitle"></div>
+        <div class="scores-box">
+            <div class="score-card"><div class="sc-label">اللاعب الأول</div><div class="sc-val p1" id="finalP1">0</div></div>
+            <div class="score-card"><div class="sc-label">اللاعب الثاني</div><div class="sc-val p2" id="finalP2">0</div></div>
+        </div>
+        <button class="end-btn" onclick="endGame()">إنهاء</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+    const firebaseConfig={apiKey:"AIzaSyCEEqEALOCaQo5oSoR8A_Jh9eSpHS8Sz5o",authDomain:"game1-bb93e.firebaseapp.com",databaseURL:"https://game1-bb93e-default-rtdb.firebaseio.com",projectId:"game1-bb93e",storageBucket:"game1-bb93e.firebasestorage.app",messagingSenderId:"268851425259",appId:"1:268851425259:web:0074f52657190d7347b3ae"};
+    firebase.initializeApp(firebaseConfig);
+    const db=firebase.database(),gameRef=db.ref('a1');
+    const MY_KEY='player1',MY_ANSWERS='player1Answers',MY_SCORE='player1Score';
+    const OPP_ANSWERS='player2Answers';
+    const TOTAL_Q=10,Q_TIME=10,CIRCUM=2*Math.PI*44;
+
+    let currentQIndex=-1, myScore=0, questionTimer=null, answered=false, questions=null;
+
+    /* جسيمات */
+    !function(){const c=document.getElementById('bg'),x=c.getContext('2d');let w,h,p=[];function r(){w=c.width=innerWidth;h=c.height=innerHeight}r();addEventListener('resize',r);for(let i=0;i<45;i++)p.push({x:Math.random()*2e3,y:Math.random()*2e3,r:Math.random()*1.8+.3,dx:(Math.random()-.5)*.35,dy:(Math.random()-.5)*.35,h:20+Math.random()*25,a:.1+Math.random()*.35});!function d(){x.clearRect(0,0,w,h);p.forEach(v=>{x.beginPath();x.arc(v.x,v.y,v.r,0,6.28);x.fillStyle=`hsla(${v.h},100%,60%,${v.a})`;x.fill();v.x+=v.dx;v.y+=v.dy;if(v.x<0||v.x>w)v.dx*=-1;if(v.y<0||v.y>h)v.dy*=-1});requestAnimationFrame(d)}()}();
+
+    /* عرض السؤال */
+    function showQuestion(idx){
+        if(idx>=TOTAL_Q){finishGame();return}
+        currentQIndex=idx;
+        answered=false;
+        const q=questions[idx];
+        document.getElementById('qCounter').textContent=`السؤال ${idx+1} من ${TOTAL_Q}`;
+        document.getElementById('qText').innerHTML=`${q.num1} <span class="op">${q.operator}</span> ${q.num2} <span class="eq">=</span> ?`;
+        document.getElementById('ansInput').value='';
+        document.getElementById('ansInput').disabled=false;
+        document.getElementById('submitBtn').disabled=false;
+        document.getElementById('feedback').textContent='';
+        document.getElementById('feedback').className='feedback';
+        document.getElementById('ansInput').focus();
+
+        /* بدء العداد */
+        const startTime=Date.now();
+        gameRef.child('questionStartTime').set(startTime);
+
+        clearInterval(questionTimer);
+        questionTimer=setInterval(()=>{
+            const elapsed=(Date.now()-startTime)/1000;
+            const rem=Math.max(0,Q_TIME-elapsed);
+            updateTimer(rem);
+            if(rem<=0){
+                clearInterval(questionTimer);
+                if(!answered) handleTimeout(idx);
+            }
+        },50);
+    }
+
+    function updateTimer(rem){
+        const pct=rem/Q_TIME;
+        document.getElementById('timerCircle').style.strokeDashoffset=CIRCUM*(1-pct);
+        document.getElementById('timerNum').textContent=Math.ceil(rem);
+        const circle=document.getElementById('timerCircle');
+        if(rem<=3) circle.classList.add('danger'); else circle.classList.remove('danger');
+    }
+
+    /* إرسال الإجابة */
+    function submitAnswer(){
+        if(answered) return;
+        const input=document.getElementById('ansInput');
+        const val=input.value.trim();
+        if(val==='') return;
+        answered=true;
+        clearInterval(questionTimer);
+
+        const idx=currentQIndex;
+        const q=questions[idx];
+        const userAns=parseInt(val);
+        const elapsed=(Date.now()-parseFloat(document.getElementById('timerNum').dataset.start||Date.now()))/1000;
+
+        /* حساب النقاط: الثواني المتبقية */
+        const timerText=document.getElementById('timerNum').textContent;
+        const remSeconds=parseInt(timerText)||0;
+        let points=0;
+        const fb=document.getElementById('feedback');
+
+        if(userAns===q.answer){
+            points=remSeconds;
+            fb.textContent='إجابة صحيحة! +'+points;
+            fb.className='feedback correct';
+        } else {
+            points=0;
+            fb.textContent='إجابة خاطئة! +0';
+            fb.className='feedback wrong';
+        }
+
+        myScore+=points;
+        document.getElementById('myScore').textContent=myScore;
+        document.getElementById('ansInput').disabled=true;
+        document.getElementById('submitBtn').disabled=true;
+
+        /* حفظ في Firebase */
+        gameRef.child(MY_ANSWERS+'/'+idx).set({answer:userAns,correct:userAns===q.answer,points:points,timeLeft:remSeconds});
+        gameRef.child(MY_SCORE).set(myScore);
+
+        /* الانتظار ثم السؤال التالي */
+        setTimeout(()=>{
+            /* تحريك السؤال التالي */
+            gameRef.child('currentQuestionIndex').once('value').then(snap=>{
+                const cur=snap.val()||0;
+                if(cur<=idx) gameRef.child('currentQuestionIndex').set(idx+1);
+            });
+        },800);
+    }
+
+    function handleTimeout(idx){
+        answered=true;
+        const fb=document.getElementById('feedback');
+        fb.textContent='انتهى الوقت! +0';
+        fb.className='feedback timeout';
+        document.getElementById('ansInput').disabled=true;
+        document.getElementById('submitBtn').disabled=true;
+
+        gameRef.child(MY_ANSWERS+'/'+idx).set({answer:null,correct:false,points:0,timeLeft:0});
+        gameRef.child(MY_SCORE).set(myScore);
+
+        setTimeout(()=>{
+            gameRef.child('currentQuestionIndex').once('value').then(snap=>{
+                const cur=snap.val()||0;
+                if(cur<=idx) gameRef.child('currentQuestionIndex').set(idx+1);
+            });
+        },800);
+    }
+
+    /* Enter للإجابة */
+    document.getElementById('ansInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitAnswer()});
+
+    /* مراقبة انتقال الأسئلة */
+    gameRef.child('currentQuestionIndex').on('value',snap=>{
+        const idx=snap.val();
+        if(idx===null||idx===-1) return;
+        if(idx>TOTAL_Q-1){finishGame();return}
+        if(idx>currentQIndex) showQuestion(idx);
+    });
+
+    /* بدء السؤال الأول */
+    gameRef.child('questions').once('value').then(snap=>{
+        questions=snap.val();
+        if(!questions){finishGame();return}
+        gameRef.child('currentQuestionIndex').once('value').then(s=>{
+            const cur=s.val();
+            if(cur===null||cur===-1||cur===undefined){
+                gameRef.child('currentQuestionIndex').set(0);
+            } else {
+                if(cur>=TOTAL_Q){finishGame();return}
+                showQuestion(cur);
+            }
+        });
+    });
+
+    /* نهاية اللعبة */
+    function finishGame(){
+        clearInterval(questionTimer);
+        gameRef.child('gameEnded').set(true);
+    }
+
+    gameRef.child('gameEnded').on('value',snap=>{
+        if(snap.val()) showResult();
+    });
+
+    function showResult(){
+        clearInterval(questionTimer);
+        gameRef.child(MY_SCORE).once('value').then(s1=>{
+            gameRef.child('player2Score').once('value').then(s2=>{
+                const p1=s1.val()||0,p2=s2.val()||0;
+                document.getElementById('finalP1').textContent=p1;
+                document.getElementById('finalP2').textContent=p2;
+                const title=document.getElementById('resultTitle');
+                if(p1>p2){title.textContent='تم انتهاء المسابقه والفائز هو اللاعب الأول';title.className='result-title win'}
+                else if(p2>p1){title.textContent='تم انتهاء المسابقه والفائز هو اللاعب الثاني';title.className='result-title lose'}
+                else{title.textContent='تم انتهاء المسابقه بالتعادل';title.className='result-title draw'}
+                document.getElementById('resultOverlay').classList.add('show');
+            });
+        });
+    }
+
+    function endGame(){
+        gameRef.remove().then(()=>{window.location.href='player1.html'});
+    }
+    </script>
+</body>
+</html>

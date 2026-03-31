@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحدي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #0a0e17;
+            color: #f0e6d3;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas#bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff6b35, #ffd700);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: titleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .players-row {
+            display: flex;
+            gap: clamp(30px, 8vw, 100px);
+            align-items: center;
+        }
+
+        .player-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .p-btn {
+            width: clamp(100px, 18vw, 160px);
+            height: clamp(100px, 18vw, 160px);
+            border-radius: 50%;
+            border: 4px solid #ff6b35;
+            background: radial-gradient(circle at 35% 35%, #1a1a2e, #0a0e17);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            color: #ff6b35;
+            font-weight: 900;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .p-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.25), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .p-btn:hover:not(.reserved)::before {
+            opacity: 1;
+        }
+
+        .p-btn:hover:not(.reserved) {
+            transform: scale(1.12);
+            box-shadow: 0 0 40px rgba(255, 107, 53, 0.5);
+        }
+
+        .p-btn:active:not(.reserved) {
+            transform: scale(0.95);
+        }
+
+        .p-btn.reserved {
+            border-color: #444;
+            cursor: not-allowed;
+            opacity: 0.45;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .p-btn.reserved .btn-icon {
+            display: none;
+        }
+
+        .p-btn.reserved::after {
+            content: 'محجوز';
+            position: absolute;
+            font-size: clamp(0.8rem, 2vw, 1.1rem);
+            color: #ff4444;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .p-name {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            font-weight: 700;
+        }
+
+        .vs {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 900;
+            color: #ff6b35;
+            animation: vsPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes vsPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.25); }
+        }
+
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb1 {
+            width: 400px;
+            height: 400px;
+            background: #ff6b35;
+            top: -100px;
+            right: -100px;
+            animation: orbMove1 8s ease-in-out infinite;
+        }
+
+        .orb2 {
+            width: 350px;
+            height: 350px;
+            background: #ffd700;
+            bottom: -100px;
+            left: -100px;
+            animation: orbMove2 10s ease-in-out infinite;
+        }
+
+        @keyframes orbMove1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-60px, 60px); }
+        }
+
+        @keyframes orbMove2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(60px, -60px); }
+        }
+
+        .reset-note {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #555;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg"></canvas>
+    <div class="glow-orb orb1"></div>
+    <div class="glow-orb orb2"></div>
+    <div class="content">
+        <h1>هيا بنا الى التحدي</h1>
+        <div class="players-row">
+            <div class="player-col">
+                <button class="p-btn" id="btn1" onclick="selectPlayer(1)">
+                    <span class="btn-icon">1</span>
+                </button>
+                <span class="p-name">اللاعب الأول</span>
+            </div>
+            <span class="vs">VS</span>
+            <div class="player-col">
+                <button class="p-btn" id="btn2" onclick="selectPlayer(2)">
+                    <span class="btn-icon">2</span>
+                </button>
+                <span class="p-name">اللاعب الثاني</span>
+            </div>
+        </div>
+    </div>
+    <div class="reset-note">اضغط مطولاً على أي زر لإعادة تعيين اللعبة</div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+        /* === Firebase === */
+        var firebaseConfig = {
+            apiKey: "AIzaSyCEEqEALOCaQo5oSoR8A_Jh9eSpHS8Sz5o",
+            authDomain: "game1-bb93e.firebaseapp.com",
+            databaseURL: "https://game1-bb93e-default-rtdb.firebaseio.com",
+            projectId: "game1-bb93e",
+            storageBucket: "game1-bb93e.firebasestorage.app",
+            messagingSenderId: "268851425259",
+            appId: "1:268851425259:web:0074f52657190d7347b3ae"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        var gameRef = db.ref("a1");
+
+        /* === جسيمات الخلفية === */
+        (function initParticles() {
+            var canvas = document.getElementById("bg");
+            var ctx = canvas.getContext("2d");
+            var w = 0;
+            var h = 0;
+            var particles = [];
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+
+            resize();
+            window.addEventListener("resize", resize);
+
+            /* إنشاء الجسيمات */
+            for (var i = 0; i < 70; i++) {
+                particles.push({
+                    x: Math.random() * 2000,
+                    y: Math.random() * 2000,
+                    r: Math.random() * 2.2 + 0.4,
+                    dx: (Math.random() - 0.5) * 0.6,
+                    dy: (Math.random() - 0.5) * 0.6,
+                    hue: 20 + Math.random() * 25,
+                    alpha: 0.2 + Math.random() * 0.5
+                });
+            }
+
+            /* رسم الإطار */
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+
+                /* رسم الجسيمات */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = "hsla(" + p.hue + ", 100%, 60%, " + p.alpha + ")";
+                    ctx.fill();
+
+                    /* حركة */
+                    p.x = p.x + p.dx;
+                    p.y = p.y + p.dy;
+                    if (p.x < 0 || p.x > w) { p.dx = p.dx * -1; }
+                    if (p.y < 0 || p.y > h) { p.dy = p.dy * -1; }
+                }
+
+                /* رسم الخطوط بين الجسيمات القريبة */
+                for (var i = 0; i < particles.length; i++) {
+                    for (var j = i + 1; j < particles.length; j++) {
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 130) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            var lineAlpha = 0.12 * (1 - dist / 130);
+                            ctx.strokeStyle = "rgba(255, 107, 53, " + lineAlpha + ")";
+                            ctx.lineWidth = 0.6;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        })();
+
+        /* === اختيار اللاعب === */
+        function selectPlayer(num) {
+            var btn = document.getElementById("btn" + num);
+            var key = "player" + num + "Reserved";
+
+            gameRef.child(key).once("value").then(function(snap) {
+                if (snap.val() === true) {
+                    return;
+                }
+                gameRef.child(key).set(true).then(function() {
+                    btn.classList.add("reserved");
+                    setTimeout(function() {
+                        window.location.href = "player" + num + ".html";
+                    }, 900);
+                });
+            });
+        }
+
+        /* === إعادة تعيين بالضغط المطول === */
+        var longTimer = null;
+
+        document.getElementById("btn1").addEventListener("pointerdown", function() {
+            longTimer = setTimeout(resetGame, 1500);
+        });
+        document.getElementById("btn2").addEventListener("pointerdown", function() {
+            longTimer = setTimeout(resetGame, 1500);
+        });
+        document.getElementById("btn1").addEventListener("pointerup", function() {
+            clearTimeout(longTimer);
+        });
+        document.getElementById("btn2").addEventListener("pointerup", function() {
+            clearTimeout(longTimer);
+        });
+
+        function resetGame() {
+            gameRef.remove().then(function() {
+                location.reload();
+            });
+        }
+
+        /* === الاستماع لحالة الحجز من Firebase === */
+        gameRef.child("player1Reserved").on("value", function(snap) {
+            if (snap.val()) {
+                document.getElementById("btn1").classList.add("reserved");
+            }
+        });
+
+        gameRef.child("player2Reserved").on("value", function(snap) {
+            if (snap.val()) {
+                document.getElementById("btn2").classList.add("reserved");
+            }
+        });
+    </script>
+</body>
+</html>
